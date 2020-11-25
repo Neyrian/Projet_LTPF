@@ -1,16 +1,4 @@
-(* TD While_suite
-Vu la compléxité, on a travaillé à plusieurs
-
-MALOD Victor
-BLANQUET Antoine
-GONZALEZ Jules
-LANQUETIN Alexis
-
-alexis.lanquetin@etu.univ-grenoble-alpes.fr
-
-On continue le TP de la dernière fois. On cherche toujours
-à analyser des programmes comme
-
+(* 
 a:=1;
 b:=1;
 c:=1;
@@ -38,20 +26,6 @@ L pour liste d'instructions
   L ::= ;S | ε
   I ::= V:=E | i.E{S}{S} | w.E{S} | ε
 
-Travail à effectuer :
-- Si pas fait lors de la séance précédente:
-  écrire en ocaml un type d'AST pour les programmes visés et
-  fonction de type : string -> ast qui rend l'AST correspondant
-  si la string fait partie du langage défini par cette grammaire.
-- Écrivez une autre version de vos fonctions qui utilisent des combinateurs,
-  comme cela est fait dans
-    https://ltpf.gricad-pages.univ-grenoble-alpes.fr/PF/anacomb.ml
-- Écrivez une autre version de anacomb.ml (anacomblazy.ml), qui utilise
-  des listes paresseuses
-- Écrivez une autre version de vos fonctions qui utilisent les listes paresseuses
-- facultatif (pas pour les paresseux donc):
-  Écrivez une autre version de vos fonctions qui utilisent le type
-  Stream.t (https://caml.inria.fr/pub/docs/manual-ocaml/libref/Stream.html)
 
  *)
 
@@ -76,15 +50,15 @@ type 't analist = 't list -> 't list
 
 
 (* a suivi de b, ce dernier pouvant rendre un résultat *)
-let (+>) (a : 'r analist) (b : ('r, 't) st) : ('r, 't) st =
+let (+>) (a : 'r analist) b =
   fun l -> let l = a l in b l
 
 (* a rendant un résultat suivi de b, ce dernier pouvant rendre un résultat *)
-let (++>) (a : ('r, 't) ranalist) (b : 'x -> ('r, 't) st) : ('r, 't) st =
+let (++>) (a : ('r, 't) ranalist) b =
   fun l -> let (x, l) = a l in b x l
 
 (* Choix entre a ou b *)
-let (+|) (a : ('r, 't) st) (b : ('r, 't) st) : ('r, 't) st =
+let (+|) (a : ('r, 't) st) (b : ('r, 't) st) =
   fun l -> try a l with Echec -> b l
 
 (* *)
@@ -103,65 +77,61 @@ let assoc_var c: var = match c with
   | 'd' -> D
   | _ -> raise Echec;;
 
-let terminal_var: (var,char) ranalist = fun l -> match l with
-  | x :: l ->  (return (assoc_var x) l)
+let terminal_var c : ('r, 't) ranalist = fun l -> match l with
+  | x :: l -> ((assoc_var x), l)
   | _ -> raise Echec
+
+
+let p_V : (var, char) ranalist =
+  fun l -> (terminal_var 'a' +| terminal_var 'b' +| terminal_var 'c' +| terminal_var 'd') l
+
+
 
 let assoc_cons c: cons = match c with
   | '0' -> O
   | '1' -> I
   | _ -> raise Echec;;
 
-let terminal_cons : (cons,char) ranalist = fun l -> match l with
-  | x :: l ->  (return (assoc_cons x) l)
+let terminal_cons c : ('r, 't) ranalist = fun l -> match l with
+  | x :: l -> ((assoc_cons x), l)
   | _ -> raise Echec
-
-let p_V : (var, char) ranalist =
-  fun l ->  terminal_var l
 
 
 let p_C : (cons, char) ranalist =
-  fun l -> terminal_cons l
+  fun l -> (terminal_cons '0' +| terminal_cons '1') l
 
+
+let prog = list_of_string "a";;
+p_V prog;;
 
 let p_E : (exp, char) ranalist =
-  fun l -> try
-          let e,l = p_V l in (V(e), l)
-        with Echec ->  let e, l = p_C l in (C(e),l)
+  fun l -> ((p_V ++> fun v -> return (V(v)))
+            +| (p_C ++> fun c -> return (C(c)))) l
+
+let prog = list_of_string "a";;
+p_E prog;;
+
+let p_P : char analist =
+  fun l -> terminal ';' l
 
 
 let rec p_S : ('r, 't) ranalist =
-  fun l -> try
-          let x1,l = p_I l in
-          let x2,l = p_L l in
-          (Seq(x1,x2),l)
-        with Echec -> (Skip, l)
+  fun l -> (p_I ++> fun i -> (p_L ++> fun s -> return (Seq(i,s)))) l
 and p_L : ('r, 't) ranalist =
-  fun l -> try let l = terminal ';' l in  p_S l with Echec -> (Skip, l)
+  fun l ->  ((p_P +> p_S) +| (return Skip)) l
+
 and p_I : ('r, 't) ranalist =
-  fun l -> try let v,l = p_V l in
-               let l = terminal ':' l in
-               let l = terminal '=' l in
-               let e, l = p_E l in Assign(v,e),l with Echec ->
-                                                     try let l = terminal 'i' l in
-                                                         let l = terminal '.' l in
-                                                         let e,l = p_E l in
-                                                         let l = terminal '{' l in
-                                                         let seqT,l = p_S l in
-                                                         let l = terminal '}' l in
-                                                         let l = terminal '{' l in
-                                                         let seqF,l = p_S l in
-                                                         let l = terminal '}' l in
-                                                         If(e, seqT, seqF),l with Echec ->
-                                                                                  try let l = terminal 'w' l in
-                                                                                  let l = terminal '.' l in
-                                                                                  let e,l = p_E l in
-                                                                                  let l = terminal '{' l in
-                                                                                  let seq,l = p_S l in
-                                                                                  let l = terminal '}' l in
-                                                                                  While(e,seq),l with Echec -> (Skip,l)
-                                                       
-                               
+  fun l -> ((p_V ++> (fun v -> (terminal ':' +> (terminal '=' +> p_E)) ++> fun e -> return (Assign(v,e)) ))
+                             +| ((terminal 'i' +> (terminal '.' +> p_E)) ++>
+                                   (fun e -> ((terminal '{' +> p_S) ++>
+                                     (fun seq1 -> (terminal '}' +> (terminal '{' +> p_S) ++>
+                                                     (fun seq2 -> (terminal '}' +> return (If(e, seq1, seq2)))))))))                                                  +| ((terminal 'w' +> (terminal '.' +> p_E) ++>
+                                                                                                                                                                             (fun w -> (terminal '{' +> p_S ++>
+                                                                                                                                                                                          (fun seq -> (terminal '}' +> return (While(w, seq))))))))) l
+        
+
 
 let prog = list_of_string  "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a}}";;
+
 p_S prog;;
+
