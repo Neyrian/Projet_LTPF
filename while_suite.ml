@@ -123,18 +123,17 @@ and p_L : ('r, 't) ranalist =
 
 and p_I : ('r, 't) ranalist =
   fun l -> ((p_V ++> (fun v -> (terminal ':' +> (terminal '=' +> p_E)) ++> fun e -> return (Assign(v,e)) ))
-                             +| ((terminal 'i' +> (terminal '.' +> p_E)) ++>
+
+            +| ((terminal 'i' +> (terminal '.' +> p_E)) ++>
                                    (fun e -> ((terminal '{' +> p_S) ++>
                                      (fun seq1 -> (terminal '}' +> (terminal '{' +> p_S) ++>
-                                                     (fun seq2 -> (terminal '}' +> return (If(e, seq1, seq2)))))))))                                                  +| ((terminal 'w' +> (terminal '.' +> p_E) ++>
+                                                     (fun seq2 -> (terminal '}' +> return (If(e, seq1, seq2)))))))))
+            +| ((terminal 'w' +> (terminal '.' +> p_E) ++>
                                                                                                                                                                              (fun w -> (terminal '{' +> p_S ++>
                                                                                                                                                                                           (fun seq -> (terminal '}' +> return (While(w, seq))))))))) l
         
 
 
-let prog = list_of_string  "a:=1;b:=1;c:=1;a:=#;w.a{i.c{c:=0;a:=b}{b:=0;c:=a}}";;
-
-p_S prog;;
 
 type state = E of assoc * state | Eps
 and assoc = A of (var * cons);;
@@ -154,22 +153,24 @@ let rec update_aux: state -> var -> cons -> state =
    | E(A(v_act,c_act),s_suiv) -> if (v_act = v)
                                 then E(A(v_act,c_new),s_suiv)
                                 else E(A(v_act,c_act), (update_aux s_suiv v c_new))
-   | Eps -> raise UnknownVal;;
-                                              
-let rec update: state -> var -> exp -> state =
-  fun s v exp_new ->
-  match exp_new with
-  | V(v) -> let c_new = get s v in update_aux s v c_new
-  | C(c) -> update_aux s v c
-  | N -> let c_new = get s v in update_aux s v (neg c_new)
-              
-and get: state -> var -> cons =
+   | Eps -> E(A(v,c_new), Eps);;
+
+let rec get: state -> var -> cons =
   fun s v ->
   match s with
   | E(A(v_act,c_act),s_suiv) -> if (v_act = v)
                                 then c_act
                                 else get s_suiv v
   | Eps -> raise UnknownVal;;
+
+let rec update: state -> var -> exp -> state =
+  fun s v exp_new ->
+  match exp_new with
+  | V(v_exp) -> let c_new = get s v_exp in update_aux s v c_new
+  | C(c) -> update_aux s v c
+  | N -> let c_new = get s v in update_aux s v (neg c_new)
+              
+
 
 
 let eval_Expr: exp -> state -> bool =
@@ -192,7 +193,23 @@ let rec faire_un_pas: ins -> state -> config =
 
                                 
     
+let setState: state -> state =
+  fun s -> let sa = update s A (C(O)) in
+           let sb = update sa B (C(O)) in
+           let sc = update sb C (C(O)) in
+           let sd = update sc D (C(O)) in sd;;
 
-let executer : ins -> state -> state =
+      
+let rec executer : ins -> state -> state =
+  fun p s -> let step = faire_un_pas p s in
+             match step with
+             | CS(s_final) -> s_final
+             | CC(s_inter, p_suivant) -> executer p_suivant s_inter
                  
 
+let prog = list_of_string  "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
+
+let s : state = setState Eps;;
+let myprog = p_S prog;;
+
+let prog_exec = let myprog = p_S prog in  match myprog with (i, _) -> executer i s;;
