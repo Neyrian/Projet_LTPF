@@ -27,7 +27,7 @@ L pour liste d'instructions
   I ::= V:=E | i.E{S}{S} | w.E{S} | ε
 
 
- *)
+*)
 
 exception Echec
 
@@ -38,8 +38,8 @@ let list_of_string s =
 
 
 type var = A | B | C | D
-type cons = O | I
-type exp = V of var | C of cons
+type cons = O | I 
+type exp = V of var | C of cons | N
 type ins = Seq of ins * ins | Assign of var * exp | While of exp * ins | If of exp * ins * ins | Skip
 
 type ('r,'t) ranalist = 't list -> 'r * 't list
@@ -101,19 +101,20 @@ let p_C : (cons, char) ranalist =
   fun l -> (terminal_cons '0' +| terminal_cons '1') l
 
 
-let prog = list_of_string "a";;
-p_V prog;;
+let terminal_neg c : ('r, 't) ranalist = fun l -> match l with
+  | x :: l when x='#'-> (N, l)
+  | _ -> raise Echec
+
+let p_N : (exp, char) ranalist =
+  fun l -> terminal_neg '#' l
 
 let p_E : (exp, char) ranalist =
   fun l -> ((p_V ++> fun v -> return (V(v)))
-            +| (p_C ++> fun c -> return (C(c)))) l
-
-let prog = list_of_string "a";;
-p_E prog;;
+            +| (p_C ++> fun c -> return (C(c)))
+           +|  (p_N ++> fun n -> return n)) l
 
 let p_P : char analist =
   fun l -> terminal ';' l
-
 
 let rec p_S : ('r, 't) ranalist =
   fun l -> (p_I ++> fun i -> (p_L ++> fun s -> return (Seq(i,s)))) l
@@ -131,7 +132,67 @@ and p_I : ('r, 't) ranalist =
         
 
 
-let prog = list_of_string  "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a}}";;
+let prog = list_of_string  "a:=1;b:=1;c:=1;a:=#;w.a{i.c{c:=0;a:=b}{b:=0;c:=a}}";;
 
 p_S prog;;
+
+type state = E of assoc * state | Eps
+and assoc = A of (var * cons);;
+
+type config = CC of state * ins | CS of state;;
+
+
+exception UnknownVal
+exception NonSetVarNegation
+
+let neg: cons -> cons =
+  fun c -> if (c = O) then I else O
+
+let rec update_aux: state -> var -> cons -> state =
+  fun s v c_new ->
+   match s with
+   | E(A(v_act,c_act),s_suiv) -> if (v_act = v)
+                                then E(A(v_act,c_new),s_suiv)
+                                else E(A(v_act,c_act), (update_aux s_suiv v c_new))
+   | Eps -> raise UnknownVal;;
+                                              
+let rec update: state -> var -> exp -> state =
+  fun s v exp_new ->
+  match exp_new with
+  | V(v) -> let c_new = get s v in update_aux s v c_new
+  | C(c) -> update_aux s v c
+  | N -> let c_new = get s v in update_aux s v (neg c_new)
+              
+and get: state -> var -> cons =
+  fun s v ->
+  match s with
+  | E(A(v_act,c_act),s_suiv) -> if (v_act = v)
+                                then c_act
+                                else get s_suiv v
+  | Eps -> raise UnknownVal;;
+
+
+let eval_Expr: exp -> state -> bool =
+  fun e s -> match e with
+             | V(v) -> let r = get s v in if (r = I) then true else false
+             | C(c) -> if (c = I) then true else false
+             | N -> raise NonSetVarNegation
+
+
+let rec faire_un_pas: ins -> state -> config =
+  fun p s ->  match p with
+                | Skip -> CS(s)
+                | Assign(variable, affect) -> CS (update s variable affect)
+                | Seq(seq1,seq2) -> (let resSeq1 = faire_un_pas seq1 s in
+                                match resSeq1 with
+                                | CS(sSeq1) -> CC(sSeq1, seq2)
+                                | CC(sSeq1, pSeq1) -> CC(sSeq1, Seq(pSeq1, seq2)))
+                | While(expr, inst) -> CC(s, (If(expr, Seq(inst, While(expr, inst)), Skip)))
+                | If(expr, ins_true, ins_false) -> if (eval_Expr expr s) then CC(s, ins_true) else  CC(s, ins_false);;
+
+                                
+    
+
+let executer : ins -> state -> state =
+                 
 
