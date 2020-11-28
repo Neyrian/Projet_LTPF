@@ -37,16 +37,27 @@ let list_of_string s =
   in boucle s 0 (String.length s)
 
 
+
+
 type var = A | B | C | D
 type cons = O | I 
 type exp = V of var | C of cons | N
 type ins = Seq of ins * ins | Assign of var * exp | While of exp * ins | If of exp * ins * ins | Skip
 
-type ('r,'t) ranalist = 't list -> 'r * 't list
 
-type ('r,'t) st = 't list -> 'r
+type 't lazylist = unit -> 't contentsil
+and 't contentsil = Nil | Cons of 't * 't lazylist;;
 
-type 't analist = 't list -> 't list
+type ('r,'t) ranalist = 't lazylist -> 'r * 't lazylist
+
+type ('r,'t) st = 't lazylist -> 'r
+
+type 't analist = 't lazylist -> 't lazylist
+
+let lazylist_of_string s =
+  let rec boucle s i n =
+    if i = n then fun () -> Nil else fun () ->  Cons(s.[i], (boucle s (i+1) n))
+  in boucle s 0 (String.length s)
 
 
 (* a suivi de b, ce dernier pouvant rendre un résultat *)
@@ -66,9 +77,9 @@ let return : 'r -> ('r, 't) ranalist =
   fun x l -> (x, l)
 
 
-let terminal c : 't analist = fun l -> match l with
-  | x :: l when x = c ->  l
-  | _ -> raise Echec
+let terminal c : 't analist = fun l -> match l () with
+                                       | Cons(x, l) when x = c ->  l
+                                       | _ -> raise Echec
 
 let assoc_var c: var = match c with
   | 'a' -> A
@@ -77,8 +88,8 @@ let assoc_var c: var = match c with
   | 'd' -> D
   | _ -> raise Echec;;
 
-let terminal_var c : ('r, 't) ranalist = fun l -> match l with
-  | x :: l -> ((assoc_var x), l)
+let terminal_var c : ('r, 't) ranalist = fun l -> match l () with
+  | Cons(x, l) -> ((assoc_var x), l)
   | _ -> raise Echec
 
 
@@ -92,8 +103,8 @@ let assoc_cons c: cons = match c with
   | '1' -> I
   | _ -> raise Echec;;
 
-let terminal_cons c : ('r, 't) ranalist = fun l -> match l with
-  | x :: l -> ((assoc_cons x), l)
+let terminal_cons c : ('r, 't) ranalist = fun l -> match l () with
+  |Cons(x, l) -> ((assoc_cons x), l)
   | _ -> raise Echec
 
 
@@ -101,8 +112,8 @@ let p_C : (cons, char) ranalist =
   fun l -> (terminal_cons '0' +| terminal_cons '1') l
 
 
-let terminal_neg c : ('r, 't) ranalist = fun l -> match l with
-  | x :: l when x='#'-> (N, l)
+let terminal_neg c : ('r, 't) ranalist = fun l -> match l () with
+  | Cons(x, l) when x='#'-> (N, l)
   | _ -> raise Echec
 
 let p_N : (exp, char) ranalist =
@@ -207,7 +218,7 @@ let rec executer : ins -> state -> state =
              | CC(s_inter, p_suivant) -> executer p_suivant s_inter
                  
 
-let prog = list_of_string  "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
+let prog = lazylist_of_string "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
 
 let s : state = setState Eps;;
 let myprog = p_S prog;;
