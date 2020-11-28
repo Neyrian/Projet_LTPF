@@ -29,7 +29,7 @@ L pour liste d'instructions
 
 *)
 
-exception Echec
+exception EchecParsing
 
 let list_of_string s =
   let rec boucle s i n =
@@ -70,7 +70,7 @@ let (++>) (a : ('r, 't) ranalist) b =
 
 (* Choix entre a ou b *)
 let (+|) (a : ('r, 't) st) (b : ('r, 't) st) =
-  fun l -> try a l with Echec -> b l
+  fun l -> try a l with EchecParsing -> b l
 
 (* *)
 let return : 'r -> ('r, 't) ranalist =
@@ -79,18 +79,18 @@ let return : 'r -> ('r, 't) ranalist =
 
 let terminal c : 't analist = fun l -> match l () with
                                        | Cons(x, l) when x = c ->  l
-                                       | _ -> raise Echec
+                                       | _ -> raise EchecParsing
 
 let assoc_var c: var = match c with
   | 'a' -> A
   | 'b' -> B
   | 'c' -> C
   | 'd' -> D
-  | _ -> raise Echec;;
+  | _ -> raise EchecParsing;;
 
 let terminal_var c : ('r, 't) ranalist = fun l -> match l () with
   | Cons(x, l) -> ((assoc_var x), l)
-  | _ -> raise Echec
+  | _ -> raise EchecParsing
 
 
 let p_V : (var, char) ranalist =
@@ -101,11 +101,11 @@ let p_V : (var, char) ranalist =
 let assoc_cons c: cons = match c with
   | '0' -> O
   | '1' -> I
-  | _ -> raise Echec;;
+  | _ -> raise EchecParsing;;
 
 let terminal_cons c : ('r, 't) ranalist = fun l -> match l () with
   |Cons(x, l) -> ((assoc_cons x), l)
-  | _ -> raise Echec
+  | _ -> raise EchecParsing
 
 
 let p_C : (cons, char) ranalist =
@@ -114,7 +114,7 @@ let p_C : (cons, char) ranalist =
 
 let terminal_neg c : ('r, 't) ranalist = fun l -> match l () with
   | Cons(x, l) when x='#'-> (N, l)
-  | _ -> raise Echec
+  | _ -> raise EchecParsing
 
 let p_N : (exp, char) ranalist =
   fun l -> terminal_neg '#' l
@@ -218,9 +218,4 @@ let rec executer : ins -> state -> state =
              | CC(s_inter, p_suivant) -> executer p_suivant s_inter
                  
 
-let prog = lazylist_of_string "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
 
-let s : state = setState Eps;;
-let myprog = p_S prog;;
-
-let prog_exec = let myprog = p_S prog in  match myprog with (i, _) -> executer i s;;
