@@ -5,7 +5,7 @@ let exec : 'a -> state =
   fun st ->
   let prog = lazylist_of_string st in let s : state = setState Eps in
                                       let myprog_pars = p_S prog in
-                                      match myprog_pars with (i, res) -> if res () = Nil then executer i s else raise EchecParsing;;
+                                      match myprog_pars with (i, res) -> if res () = Nil then executer Debug i s else raise EchecParsing;;
 
 print_string "A chaque test, l'environnement est remis a zeros";;
 print_string "Test Assign";;

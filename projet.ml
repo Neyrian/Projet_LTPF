@@ -29,6 +29,8 @@ L pour liste d'instructions
 
 *)
 
+type mode = Nodebug | Debug
+
 exception EchecParsing
 
 let list_of_string s =
@@ -40,7 +42,7 @@ let list_of_string s =
 
 
 type var = A | B | C | D
-type cons = O | I 
+type cons = O | I
 type exp = V of var | C of cons | N
 type ins = Seq of ins * ins | Assign of var * exp | While of exp * ins | If of exp * ins * ins | Skip
 
@@ -210,12 +212,75 @@ let setState: state -> state =
            let sc = update sb C (C(O)) in
            let sd = update sc D (C(O)) in sd;;
 
-      
-let rec executer : ins -> state -> state =
+let reverse_cons :cons -> int =
+  fun c ->
+  match c with
+  | O -> 0
+  | I -> 1
+
+let printStat: state -> unit =
+  fun s -> Printf.printf "Var a = %u ;; Var b = %u ;; Var c = %u ;; Var d = %u\n"
+             (reverse_cons (get s A)) (reverse_cons (get s B)) (reverse_cons (get s C)) (reverse_cons (get s D))
+  
+let rec executer_no_debug:  ins -> state -> state =
   fun p s -> let step = faire_un_pas p s in
              match step with
              | CS(s_final) -> s_final
-             | CC(s_inter, p_suivant) -> executer p_suivant s_inter
+             | CC(s_inter, p_suivant) -> executer_no_debug p_suivant s_inter
+
+
+
+let scan_int () = Scanf.scanf " %d" (fun x -> x)
+let scan_float () = Scanf.scanf " %f" (fun x -> x)
+let scan_string () = Scanf.scanf " %s" (fun x -> x)
+let scan_char () = Scanf.scanf "%c" (fun x -> x)
+
+let waituser =
+  let rec prompt () =
+      print_string "Press enter to continue? ";
+      flush_all();
+      match scan_char () with
+      | _ -> ();
+  in
+  prompt ()
+
+let rec executer_debug: int -> int list -> ins -> state -> state =
+  fun n break_list p s ->
+  if List.mem n break_list  then
+    (Printf.printf "Break on : %u\n"n;
+     printStat s;
+     Printf.printf "Enter to continue...";
+     waituser;
+     let step = faire_un_pas p s in
+     match step with
+     | CS(s_final) -> s_final
+     | CC(s_inter, p_suivant) ->  executer_debug (n + 1) break_list p_suivant s_inter)
+  else
+    (Printf.printf "Step : %u\n" n;
+    printStat s;
+    let step = faire_un_pas p s in
+      match step with
+       | CS(s_final) -> s_final
+       | CC(s_inter, p_suivant) -> executer_debug (n + 1) break_list p_suivant s_inter)
+
+
+
+
+let rec getBreaks : int list -> int list =
+  fun l ->  let cmd = list_of_string (scan_string () ) in
+               match cmd with
+               | 'b'::' '::n::[] -> getBreaks ((int_of_char n)::l)
+               | 'r'::[] -> l
+               | _ -> print_string "Unvalid command"; getBreaks l
+  
+let rec executer : mode -> ins -> state -> unit =
+  fun mode p s ->
+  match mode with
+  | Nodebug -> print_string "No Debug mode\n";
+               printStat (executer_no_debug p s)
+  | Debug -> Printf.printf "Debug Mode\nOptions : \nb n =  breaks step n\nr = to run the prog\n";
+             let b:int list = getBreaks [] in
+             printStat (executer_debug 0 b p s)
                  
 
 
