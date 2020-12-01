@@ -11,7 +11,7 @@ print_string "A chaque test, l'environnement est remis a zeros";;
 print_string "Test Assign";;
 
 exec "a:=1";;
-rexec "a:=#";;
+exec "a:=#";;
 exec "a=1";;
 exec "z:=1";;
 exec "a:=";;

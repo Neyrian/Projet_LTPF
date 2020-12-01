@@ -234,23 +234,16 @@ let scan_int () = Scanf.scanf " %d" (fun x -> x)
 let scan_float () = Scanf.scanf " %f" (fun x -> x)
 let scan_string () = Scanf.scanf " %s" (fun x -> x)
 let scan_char () = Scanf.scanf "%c" (fun x -> x)
-
-let waituser =
-  let rec prompt () =
-      print_string "Press enter to continue? ";
-      flush_all();
-      match scan_char () with
-      | _ -> ();
-  in
-  prompt ()
+let waituser () = Scanf.scanf " %s" (ignore)
 
 let rec executer_debug: int -> int list -> ins -> state -> state =
   fun n break_list p s ->
+  flush_all ();
   if List.mem n break_list  then
     (Printf.printf "Break on : %u\n"n;
      printStat s;
      Printf.printf "Enter to continue...";
-     waituser;
+     waituser ();
      let step = faire_un_pas p s in
      match step with
      | CS(s_final) -> s_final
@@ -267,20 +260,17 @@ let rec executer_debug: int -> int list -> ins -> state -> state =
 
 
 let rec getBreaks : int list -> int list =
-  fun l ->  let cmd = list_of_string (scan_string () ) in
+  fun l ->  flush_all (); let cmd = list_of_string (scan_string ()) in
                match cmd with
-               | 'b'::' '::n::[] -> getBreaks ((int_of_char n)::l)
-               | 'r'::[] -> l
-               | _ -> print_string "Unvalid command"; getBreaks l
+               | 'b'::' '::n::[] -> flush_all ();  getBreaks ((int_of_char n)::l)
+               | 'r'::[] -> flush_all (); l
+               | _ -> flush_all (); print_string "Unvalid command\n";  getBreaks l
   
-let rec executer : mode -> ins -> state -> unit =
+let rec executer : mode -> ins -> state -> state =
   fun mode p s ->
   match mode with
   | Nodebug -> print_string "No Debug mode\n";
-               printStat (executer_no_debug p s)
-  | Debug -> Printf.printf "Debug Mode\nOptions : \nb n =  breaks step n\nr = to run the prog\n";
+               executer_no_debug p s
+  | Debug -> print_string "Debug Mode\nOptions : \nb n =  breaks step n\nr = to run the prog\n";
              let b:int list = getBreaks [] in
-             printStat (executer_debug 0 b p s)
-                 
-
-
+             executer_debug 0 b p s
