@@ -39,4 +39,3 @@ exec "a:=1;wa{b:=1;a:=0}";;
 
 print_string "Test on complex prog";;
 exec "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
-

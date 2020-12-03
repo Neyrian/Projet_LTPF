@@ -230,15 +230,13 @@ let rec executer_no_debug:  ins -> state -> state =
 
 
 
-let scan_int () = Scanf.scanf " %d" (fun x -> x)
-let scan_float () = Scanf.scanf " %f" (fun x -> x)
-let scan_string () = Scanf.scanf " %s" (fun x -> x)
+let scan_int () = Scanf.scanf "%d" (fun x -> x)
+let scan_string () = Scanf.scanf "%s" (fun x -> x)
 let scan_char () = Scanf.scanf "%c" (fun x -> x)
-let waituser () = Scanf.scanf " %s" (ignore)
+let waituser () = Scanf.scanf "%s" (ignore)
 
 let rec executer_debug: int -> int list -> ins -> state -> state =
   fun n break_list p s ->
-  flush_all ();
   if List.mem n break_list  then
     (Printf.printf "Break on : %u\n"n;
      printStat s;
@@ -259,12 +257,20 @@ let rec executer_debug: int -> int list -> ins -> state -> state =
 
 
 
+let convert_char_int: char -> int =
+  fun c -> (int_of_char c) - 48
+
 let rec getBreaks : int list -> int list =
-  fun l ->  flush_all (); let cmd = list_of_string (scan_string ()) in
+  fun l ->  let cmd = scan_char () in
                match cmd with
-               | 'b'::' '::n::[] -> flush_all ();  getBreaks ((int_of_char n)::l)
-               | 'r'::[] -> flush_all (); l
-               | _ -> flush_all (); print_string "Unvalid command\n";  getBreaks l
+               | 'b' -> let n = convert_char_int (scan_char ()) in
+                        print_string "Break on line :";
+                        print_int  n;
+                        print_newline () ;
+                        getBreaks (n::l)
+               | 'r'-> l
+               | _ -> print_string "Unvalid command\n";
+                      getBreaks l
   
 let rec executer : mode -> ins -> state -> state =
   fun mode p s ->
