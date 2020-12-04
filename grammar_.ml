@@ -1,4 +1,6 @@
 (* 
+Grammaire :
+
 V pour variable1
 C pour constante
 E pour expression
@@ -13,6 +15,7 @@ L pour liste d'instructions
 
 *)
 
+(*Déclaration des types utilisés pour la grammaire ci-dessus*)
 type var = A | B | C | D
 type cons = O | I 
 type exp = V of var | C of cons | N
