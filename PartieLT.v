@@ -198,10 +198,7 @@ la configuration comportant l'instruction i1;i2 et l'état s1 afin d'arriver dan
 intermédiare comportant l'instruction i2 et l'état s2. *) 
 Fixpoint SOS_seq i1 i2 s1 s2 (so : SOS (Inter i1 s1) (Final s2)) :
   SOS (Inter (Seq i1 i2) s1) (Inter i2 s2).
-Proof.
-  intros.
-  eapply SOS_again.
-  - apply SOS_Seqf. 
+Proof. 
 Admitted.
 
 (* 13.a) *)
@@ -438,7 +435,7 @@ Proof.
   apply SOS_stop.
 Qed.
 
-(* 14.e) *)
+(* 14.g) *)
 (* L'énoncé signifie que pour tout entier naturel i, si on exécute le programme Pcarre_inf en
 partant de l'état invar_cc 0, on peut arriver dans une configuration intermédiaire
 avec pour état invar_cc i*)
@@ -472,7 +469,7 @@ Fixpoint f_SOS_1 (i : Winstr) (s : state) : config :=
   | While be w => Inter (If be (Seq w (While be w)) Skip) s
   end.
 
-(* 15.b) *)
+(* 17.a) *)
 Lemma f_SOS_1_corr : forall i s, SOS_1 i s (f_SOS_1 i s).
 Proof.
   intros.
@@ -488,6 +485,7 @@ Proof.
   - cbn. apply SOS_While.
 Qed.
 
+(* 15.b) *)
 (* Programmes "restants à éxecuter" *)
 Definition If_instr := If (Bnot (Beqnat Ir (Aco 2))) (Seq corps_carre (While (Bnot (Beqnat Ir (Aco 2))) corps_carre)) Skip.
 Definition Seq_instr := Seq corps_carre (While (Bnot (Beqnat Ir (Aco 2))) corps_carre).
@@ -508,6 +506,32 @@ Proof.
   apply f_SOS_1_corr.
   apply SOS_stop.
 Qed.
+
+(* 17.b) *)
+(** Court. Attention : utiliser la tactique injection. *)
+Lemma f_SOS_1_compl : forall i s c, SOS_1 i s c -> c = f_SOS_1 i s.
+Proof.
+  intros.
+  induction H.
+  - cbn. reflexivity.
+  - cbn. reflexivity.
+  - cbn. destruct (f_SOS_1 i1 s).
+    -- discriminate.
+    -- injection IHSOS_1. intros. rewrite H0. reflexivity.
+  - cbn. destruct (f_SOS_1 i1 s).
+    -- injection IHSOS_1. intros. rewrite H1. rewrite H0. reflexivity.
+    -- discriminate.
+  - cbn. induction (evalB b s).
+    -- reflexivity.
+    -- discriminate.
+  - cbn. induction (evalB b s).
+    -- discriminate.
+    -- reflexivity.
+  - cbn. reflexivity.
+Qed. 
+
+
+
 
 
 
