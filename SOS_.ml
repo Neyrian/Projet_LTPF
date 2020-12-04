@@ -11,6 +11,13 @@ type config = CC of state * Grammar_.ins | CS of state;;
 (*We can't this variable or the expression is unclear*)
 exception UnknownVal;;
 
+(*Associate a Value to the O or I of the Grammar.*)
+let reverse_cons : Grammar_.cons -> int =
+  fun c ->
+  match c with
+  | Grammar_.O -> 0
+  | Grammar_.I -> 1
+
 (*Negates the associate variable*)
 let neg: Grammar_.cons -> Grammar_.cons =
   fun c -> if (c = Grammar_.O) then Grammar_.I else Grammar_.O
@@ -51,7 +58,7 @@ let eval_Expr: Grammar_.exp -> state -> bool =
              | C(c) -> if (c = Grammar_.I) then true else false
              | N -> raise UnknownVal
 
-(*make a step in the AST desribe by ins*)
+(*make a step in the AST desribe by ins by consuming it*)
 let rec faire_un_pas: Grammar_.ins -> state -> config =
   fun p s ->  match p with
               | Skip -> CS(s)

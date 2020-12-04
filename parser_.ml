@@ -9,12 +9,6 @@ exception EchecParsing;;
 type 't lazylist = unit -> 't contentsil
 and 't contentsil = Nil | Cons of 't * 't lazylist;;
 
-(*Converts from string to a list of char*)
-let list_of_string s =
-  let rec boucle s i n =
-    if i = n then [] else s.[i] :: boucle s (i+1) n
-  in boucle s 0 (String.length s)
-
 (*Converts a String to a lazylist*)
 let lazylist_of_string s =
   let rec boucle s i n =
@@ -87,7 +81,7 @@ let rec terminal_neg c : ('r, 't) ranalist = fun l -> match l () with
                                                       | Cons(x, l) when x='#'-> (Grammar_.N, l)
                                                       | _ -> raise EchecParsing
 
-(*=== The PARSER for the GRAMMAR ===*)
+(*=== The PARSER for the GRAMMAR that will build the correct AST ===*)
 
 let p_V : (Grammar_.var, char) ranalist =
   fun l -> (terminal_var 'a' +| terminal_var 'b' +| terminal_var 'c' +| terminal_var 'd') l

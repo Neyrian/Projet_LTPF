@@ -2,20 +2,21 @@
 #load "SOS_.cmo";;
 #load "main_.cmo";;*)
 
+(*fonction qui va lancer un test en mode nodebug avec un état inital à chaque test.*)
 let tester : 'a -> unit =
   fun st -> 
   let prog = Parser_.lazylist_of_string st in
-  let s : SOS_.state = Main_.setState Eps in
+  let s : SOS_.state = Main_.set_state Eps in
   try
     let myprog_pars = Parser_.p_S prog in
     match myprog_pars with (i, res) ->
       if res () = Nil
-      then let r = Main_.executer Main_.Nodebug i s in print_string (String.concat "" ["PASSED with : "; st; "\n"]); Main_.print_state r; print_newline ();
-      else print_string (String.concat "" ["FAILED PARSING (end of program not recognized) for : "; st; "\n"])
-  with Parser_.EchecParsing -> print_string (String.concat "" ["FAILED PARSING for : "; st; "\n"]);;
+      then let r = Main_.executer Main_.Nodebug i s in print_string (String.concat "" ["\027[01;32mPASSED\027[0m with : "; st; "\n"]); Main_.print_state r; print_newline ();
+      else print_string (String.concat "" ["\027[01;31mFAILED PARSING\027[0m for : "; st; "\n"])
+  with Parser_.EchecParsing -> print_string (String.concat "" ["\027[01;31mFAILED PARSING\027[0m for : "; st; "\n"]);;
 
-print_string "A chaque test, l'environnement est remis à zéro\n";;
-print_string "\n\n\t== Test_Assign ==\n\n";;
+print_string "\027[92mA chaque test, l'environnement est remis à zéro\027[0m\n";;
+print_string "\n\n\t\027[01m== \027[5mTest_Assign\027[0;1m ==\027[0m\n\n";;
 tester "a:=1";;
 tester "a := 1";;
 tester "	a := 1";;
