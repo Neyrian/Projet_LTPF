@@ -31,4 +31,4 @@ utils_.cmo: utils_.ml
 	$(COMP) -c $<
 	
 clean:
-	rm -rf *.cmi *.cmo *~ $(EXEC)
+	rm -rf *.cmi *.cmo *~
