@@ -16,7 +16,7 @@ let tester : 'a -> unit =
   with Parser_.EchecParsing -> print_string (String.concat "" ["\027[01;31mFAILED PARSING\027[0m for : "; st; "\n"]);;
 
 print_string "\027[92mA chaque test, l'environnement est remis à zéro\027[0m\n";;
-print_string "\n\n\t\027[01m== \027[5mTest_Assign\027[0;1m ==\027[0m\n\n";;
+print_string "\n\t\027[01m== \027[5mTest_Assign\027[0;1m ==\027[0m\n\n";;
 tester "a:=1";;
 tester "a := 1";;
 tester "	a := 1";;
@@ -25,13 +25,13 @@ tester "a=1";;
 tester "z:=1";;
 tester "a:=";;
 
-print_string "\n\n\t== Test_Seq ==\n\n";;
+print_string "\n\t\027[01m== \027[5mTest_Seq\027[0;1m ==\027[0m\n\n";;
 tester "a:=1;b:=1";;
 tester "\n\ta := 1;\n\tb := 1";;
 tester "a:=1;b:=1;b:=0";;
 tester "a:=1/b:=1";;
 
-print_string "\n\n\t== Test_If ==\n\n";;
+print_string "\n\t\027[01m== \027[5mTest_If\027[0;1m ==\027[0m\n\n";;
 tester "\na:=1;\ni.a{\n\tb:=1\n}{\n\tc:=1\n}";;
 tester "i.a{b:=1}{c:=1}";;
 tester "a:=1;i.a{b:=1}{}";;
@@ -40,11 +40,11 @@ tester "i.a{c:=1}";;
 tester "a:=1;i.a{b:=1{c:=1}";;
 tester "i.a{b:=1{c:=1}";;
 
-print_string "\n\n\t== Test_While ==\n\n";;
+print_string "\n\t\027[01m== \027[5mTest_While\027[0;1m ==\027[0m\n\n";;
 tester "a:=1;w.a{b:=1;a:=0}";;
 tester "w.a{b:=1;a:=0}";;
 tester "w.a{b:=1;a:=0";;
 tester "a:=1;wa{b:=1;a:=0}";;
 
-print_string "\n\n\t== Test on complex prog ==\n\n";;
+print_string "\n\t\027[01m== \027[5mTest on complex prog\027[0;1m ==\027[0m\n\n";;
 tester "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
