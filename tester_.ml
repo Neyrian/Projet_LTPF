@@ -16,7 +16,9 @@ let tester : 'a -> unit =
 
 print_string "A chaque test, l'environnement est remis à zéro\n";;
 print_string "\n\n\t== Test_Assign ==\n\n";;
-tester "a:=1;";;
+tester "a:=1";;
+tester "a := 1";;
+tester "	a := 1";;
 tester "a:=#";;
 tester "a=1";;
 tester "z:=1";;
@@ -24,11 +26,12 @@ tester "a:=";;
 
 print_string "\n\n\t== Test_Seq ==\n\n";;
 tester "a:=1;b:=1";;
+tester "\n\ta := 1;\n\tb := 1";;
 tester "a:=1;b:=1;b:=0";;
 tester "a:=1/b:=1";;
 
 print_string "\n\n\t== Test_If ==\n\n";;
-tester "a:=1;i.a{b:=1}{c:=1}";;
+tester "\na:=1;\ni.a{\n\tb:=1\n}{\n\tc:=1\n}";;
 tester "i.a{b:=1}{c:=1}";;
 tester "a:=1;i.a{b:=1}{}";;
 tester "ia{b:=1}{c:=1}";;

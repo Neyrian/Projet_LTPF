@@ -2,9 +2,22 @@
 #load "SOS_.cmo";;
 #load "main_.cmo";;*)
 
-let prog = "a:=1;b:=1;c:=1;w.a{i.c{c:=0;a:=b}{b:=0;c:=a;d:=1}}";;
+let prog = "a := 1;
+b := 1;
+c:=1;
+w.a {
+	i.c {
+		c :=0;
+		a :=b 
+	}
+	{
+		b := 0;
+		c := a;
+		d := 1
+	}
+}";;
 
-let header () = print_string "================ DEBUGGER ================\nProgram :\n\t"; print_string prog; print_string "\nOptions : \n\tb n\tbreak on step n\n\tr\tto run the prog\n==========================================\n";;
+let header () = print_string "================ DEBUGGER ================\nProgram :\n\n"; print_string prog; print_string "\n\nOptions : \n\tb n\tbreak on step n\n\tr\tto run the prog\n\tc to continue\n\tn to step forward\n==========================================\n";;
 
 let tester : 'a -> unit =
   fun st -> 

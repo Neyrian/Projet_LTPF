@@ -47,9 +47,12 @@ let return : 'r -> ('r, 't) ranalist =
 
 (*=== Terminal functions used by the parser ===*)
 
-let terminal c : 't analist = fun l -> match l () with
-                                       | Cons(x, l) when x = c ->  l
-                                       | _ -> raise EchecParsing
+let rec terminal c : 't analist = fun l -> match l () with
+                                           | Cons('\t', l) -> (terminal c) l
+                                           | Cons('\n', l) -> (terminal c) l
+                                           | Cons(' ', l) -> (terminal c) l
+                                           | Cons(x, l) when x = c -> l
+                                           | _ -> raise EchecParsing
 
 let assoc_var c: Grammar_.var = match c with
   | 'a' -> Grammar_.A
@@ -58,22 +61,31 @@ let assoc_var c: Grammar_.var = match c with
   | 'd' -> Grammar_.D
   | _ -> raise EchecParsing;;
 
-let terminal_var c : ('r, 't) ranalist = fun l -> match l () with
-                                                  | Cons(x, l) -> ((assoc_var x), l)
-                                                  | _ -> raise EchecParsing
+let rec terminal_var c : ('r, 't) ranalist = fun l -> match l () with
+                                                      | Cons('\t', l) -> (terminal_var c) l
+                                                      | Cons('\n', l) -> (terminal_var c) l
+                                                      | Cons(' ', l) -> (terminal_var c) l
+                                                      | Cons(x, l) -> ((assoc_var x), l)
+                                                      | _ -> raise EchecParsing
 
 let assoc_cons c: Grammar_.cons = match c with
   | '0' -> Grammar_.O
   | '1' -> Grammar_.I
   | _ -> raise EchecParsing;;
 
-let terminal_cons c : ('r, 't) ranalist = fun l -> match l () with
-                                                   |Cons(x, l) -> ((assoc_cons x), l)
-                                                   | _ -> raise EchecParsing
+let rec terminal_cons c : ('r, 't) ranalist = fun l -> match l () with
+                                                       | Cons('\t', l) -> (terminal_cons c) l
+                                                       | Cons('\n', l) -> (terminal_cons c) l
+                                                       | Cons(' ', l) -> (terminal_cons c) l
+                                                       | Cons(x, l) -> ((assoc_cons x), l)
+                                                       | _ -> raise EchecParsing
 
-let terminal_neg c : ('r, 't) ranalist = fun l -> match l () with
-                                                  | Cons(x, l) when x='#'-> (Grammar_.N, l)
-                                                  | _ -> raise EchecParsing
+let rec terminal_neg c : ('r, 't) ranalist = fun l -> match l () with
+                                                      | Cons('\t', l) -> (terminal_neg c) l
+                                                      | Cons('\n', l) -> (terminal_neg c) l
+                                                      | Cons(' ', l) -> (terminal_neg c) l
+                                                      | Cons(x, l) when x='#'-> (Grammar_.N, l)
+                                                      | _ -> raise EchecParsing
 
 (*=== The PARSER for the GRAMMAR ===*)
 
